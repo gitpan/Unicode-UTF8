@@ -1,3 +1,4 @@
+Changes
 inc/Module/Install.pm
 inc/Module/Install/Base.pm
 inc/Module/Install/Can.pm
@@ -27,6 +28,8 @@ t/070_restricted.t
 t/080_super.t
 t/090_non_shortest_form.t
 t/100_incomplete.t
+t/200_leaks.t
+t/210_tainted.t
 t/quickbrown.txt
 t/Util.pm
 UTF8.xs
