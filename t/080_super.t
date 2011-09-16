@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 513;
+use Test::More tests => 1537;
 use t::Util    qw[throws_ok];
 
 BEGIN {
@@ -12,6 +12,9 @@ BEGIN {
 
 my @SUPER = ();
 {
+    for (my $i = 0x0011_0000; $i < 0x7FFF_FFFF; $i += 0x200000) {
+        push @SUPER, $i;
+    }
     for (my $i = 0x8000_0000; $i < 0xFFFF_FFFF; $i += 0x400000) {
         push @SUPER, $i;
     }
@@ -23,6 +26,9 @@ foreach my $cp (@SUPER) {
 
     my $string = do { no warnings 'utf8'; pack('U', $cp) };
 
-    throws_ok { encode_utf8($string) } qr/Can't represent super code point/, $name;
+    throws_ok { 
+        use warnings FATAL => 'utf8';
+        encode_utf8($string);
+    } qr/Can't represent super code point/, $name;
 }
 

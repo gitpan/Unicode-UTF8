@@ -24,7 +24,6 @@ t/030_native.t
 t/040_wide_characters.t
 t/050_noncharacters.t
 t/060_surrogates.t
-t/070_restricted.t
 t/080_super.t
 t/090_non_shortest_form.t
 t/100_incomplete.t

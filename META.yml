@@ -28,4 +28,4 @@ requires:
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://github.com/chansen/p5-unicode-utf8
-version: 0.01_02
+version: 0.01_03
