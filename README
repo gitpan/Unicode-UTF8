@@ -34,8 +34,14 @@ DIAGNOSTICS
     Can't decode a wide character string
         (F) Wide character in octets.
 
-    Can't decode ill-formed %s octet sequence <%s> in position %u
-        (W utf8) Encountered an ill-formed octet sequence.
+    Can't decode ill-formed UTF-X octet sequence <%s> in position %u
+        (F) Encountered an ill-formed octet sequence in Perl's internal
+        representation of wide characters.
+
+    Can't decode ill-formed UTF-8 octet sequence <%s> in position %u
+        (W utf8) Encountered an ill-formed UTF-8 octet sequence. <%s>
+        contains a hexadecimal representation of the maximal subpart of the
+        ill-formed subsequence.
 
     Can't interchange noncharacter code point U+%.4X
         (W utf8) Noncharacters is permanently reserved for internal use and

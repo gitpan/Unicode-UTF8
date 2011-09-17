@@ -22,6 +22,7 @@ t/000_load.t
 t/010_basic.t
 t/030_native.t
 t/040_wide_characters.t
+t/045_replacement.t
 t/050_noncharacters.t
 t/060_surrogates.t
 t/080_super.t
@@ -32,3 +33,4 @@ t/210_tainted.t
 t/quickbrown.txt
 t/Util.pm
 UTF8.xs
+x.pl

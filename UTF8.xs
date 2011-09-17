@@ -37,10 +37,10 @@ static const U8 utf8_sequence_skip_len[0x100] = {
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0x90-0x9F */
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0xA0-0xAF */
     1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, /* 0xB0-0xBF */
-    2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, /* 0xC0-0xCF */
+    1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2, /* 0xC0-0xCF */
     2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2, /* 0xD0-0xDF */
     3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, /* 0xE0-0xEF */
-    4,4,4,4,4,4,4,4,5,5,5,5,6,6,1,1, /* 0xF0-0xFF */
+    4,4,4,4,4,1,1,1,1,1,1,1,1,1,1,1, /* 0xF0-0xFF */
 };
 
 static STRLEN
@@ -146,7 +146,7 @@ utf8_skip(const U8 *s, const STRLEN len) {
 }
 
 static void
-warn_unmappable(pTHX_ const UV cp) {
+report_unmappable(pTHX_ const UV cp) {
     const char *fmt;
 
     if (cp > 0x10FFFF)
@@ -162,7 +162,7 @@ warn_unmappable(pTHX_ const UV cp) {
 }
 
 static void
-warn_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos) {
+report_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos, const bool fatal) {
     static const char *fmt = "Can't decode ill-formed %s octet sequence <%s> in position %"UVuf;
     static const char *hex = "0123456789ABCDEF";
     char seq[20 * 3 + 4];
@@ -182,7 +182,10 @@ warn_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos) {
     }
     *d = 0;
 
-    Perl_warner(aTHX_ packWARN(WARN_UTF8), fmt, enc, seq, (UV)pos);
+    if (fatal)
+        Perl_croak(aTHX_ fmt, enc, seq, (UV)pos);
+    else
+        Perl_warner(aTHX_ packWARN(WARN_UTF8), fmt, enc, seq, (UV)pos);
 }
 
 static void
@@ -192,6 +195,9 @@ decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
     STRLEN skip;
     UV v;
 
+    SvUPGRADE(dsv, SVt_PV);
+    SvCUR_set(dsv, 0);
+
     do {
         src += off;
         len -= off;
@@ -200,9 +206,9 @@ decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
         skip = utf8_skip(src, len);
         if (do_warn) {
             if (utf8_unpack(src, skip, &v))
-                warn_unmappable(aTHX_ v);
+                report_unmappable(aTHX_ v);
             else
-                warn_illformed(aTHX_ src, skip, "UTF-8", pos);
+                report_illformed(aTHX_ src, skip, "UTF-8", pos, FALSE);
         }
 
         sv_catpvn(dsv, (const char *)src - off, off);
@@ -227,6 +233,9 @@ encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
     STRLEN skip;
     UV v;
 
+    SvUPGRADE(dsv, SVt_PV);
+    SvCUR_set(dsv, 0);
+
     do {
         src += off;
         len -= off;
@@ -242,12 +251,10 @@ encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
                 while (skip < n && UTF8_IS_CONTINUATION(src[skip]))
                     skip++;
             }
-            if (do_warn)
-                warn_illformed(aTHX_ src, skip, "UTF-X", pos);
+            report_illformed(aTHX_ src, skip, "UTF-X", pos, TRUE);
         }
-        else if (do_warn) {
-            warn_unmappable(aTHX_ v);
-        }
+        if (do_warn)
+            report_unmappable(aTHX_ v);
 
         sv_catpvn(dsv, (const char *)src - off, off);
         sv_catpvn(dsv,"\xEF\xBF\xBD", 3);
