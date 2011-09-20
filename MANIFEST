@@ -33,4 +33,3 @@ t/210_tainted.t
 t/quickbrown.txt
 t/Util.pm
 UTF8.xs
-x.pl

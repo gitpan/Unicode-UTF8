@@ -16,14 +16,14 @@ FUNCTIONS
     Returns an decoded representation of $octets in UTF-8 encoding as a
     character string.
 
-    Issues a warning if $octets contains an ill-formed UTF-8 sequence or an
-    encoded code point which can't be interchanged.
+    Issues a warning if $octets contains ill-formed UTF-8 sequences or
+    encoded code points which can't be interchanged.
 
   encode_utf8($string)
     Returns an encoded representation of $string in UTF-8 encoding as an
     octet string.
 
-    Issues a warning if $string contains a code point which can't be
+    Issues a warning if $string contains code points which can't be
     interchanged or represented in UTF-8 encoding form.
 
 EXPORTS
@@ -33,10 +33,6 @@ EXPORTS
 DIAGNOSTICS
     Can't decode a wide character string
         (F) Wide character in octets.
-
-    Can't decode ill-formed UTF-X octet sequence <%s> in position %u
-        (F) Encountered an ill-formed octet sequence in Perl's internal
-        representation of wide characters.
 
     Can't decode ill-formed UTF-8 octet sequence <%s> in position %u
         (W utf8) Encountered an ill-formed UTF-8 octet sequence. <%s>
@@ -57,6 +53,10 @@ DIAGNOSTICS
     Can't represent super code point \x{%X} in UTF-8 encoding form
         (W utf8) Code points greater than U+10FFFF. Perl's extended
         codespace.
+
+    Can't decode ill-formed UTF-X octet sequence <%s> in position %u
+        (F) Encountered an ill-formed octet sequence in Perl's internal
+        representation of wide characters.
 
 SEE ALSO
     Encode
