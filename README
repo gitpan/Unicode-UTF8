@@ -39,24 +39,85 @@ DIAGNOSTICS
         contains a hexadecimal representation of the maximal subpart of the
         ill-formed subsequence.
 
-    Can't interchange noncharacter code point U+%.4X
+    Can't interchange noncharacter code point U+%.4X at position %u
         (W utf8) Noncharacters is permanently reserved for internal use and
         that should never be interchanged. Noncharacters consist of the
         values U+nFFFE and U+nFFFF (where n is from 0 to 10^16) and the
         values U+FDD0..U+FDEF.
 
-    Can't represent surrogate code point U+%.4X in UTF-8 encoding form
+    Can't represent surrogate code point U+%.4X at position %u in UTF-8
+    encoding form
         (W utf8) Surrogate code points are designated only for surrogate
         code units in the UTF-16 character encoding form. Surrogates consist
         of code points in the range U+D800 to U+DFFF.
 
-    Can't represent super code point \x{%X} in UTF-8 encoding form
+    Can't represent super code point \x{%X} at position %u in UTF-8 encoding
+    form
         (W utf8) Code points greater than U+10FFFF. Perl's extended
         codespace.
 
     Can't decode ill-formed UTF-X octet sequence <%s> in position %u
         (F) Encountered an ill-formed octet sequence in Perl's internal
         representation of wide characters.
+
+COMPARISON
+    Comparison between "Encode"'s UTF-8 (E) and "Unicode::UTF8" (U).
+
+  Noncharacters
+    "Unicode::UTF8" recognizes all noncharacters regardless of perl version.
+    "Encode" only recognize U+FFFF on perl versions below 5.14.
+
+  Replacement U+FFFD
+    "Unicode::UTF8" implements Unicode's recommended practice for using
+    U+FFFD.
+
+    "\xF1\x80\x80":
+
+    U) "\x{FFFD}"
+
+    E) "\x{FFFD}\x{FFFD}\x{FFFD}"
+
+  Diagnostics
+    "\xF1\x80\x80":
+        U) Can't decode ill-formed UTF-8 octet sequence <F1 80 80> in
+        position 0 [...]
+
+        E) utf8 "\xF1" does not map to Unicode [...]
+
+    "\xEF\xBF\xBF":
+        U) Can't interchange noncharacter code point U+FFFF in position 0
+        [...]
+
+        E) utf8 "\xFFFF" does not map to Unicode [...]
+
+    "\x{D800}":
+        U) Can't represent surrogate code point U+D800 at position 0 in
+        UTF-8 encoding form [...]
+
+        E) "\x{d800}" does not map to utf8 [...]
+
+    "\x{110000}":
+        U) Can't represent super code point \x{110000} at position 0 in
+        UTF-8 encoding form [...]
+
+        E) "\x{110000}" does not map to utf8 [...]
+
+    "\x{FFFF}":
+        U) Can't interchange noncharacter code point U+FFFF at position 0
+        [...]
+
+        E) "\x{ffff}" does not map to utf8 [...]
+
+  Taint mode
+    "Unicode::UTF8" preserves taintedness, "Encode" does not.
+
+        $tainted_string = decode_utf8($tainted_octets);
+        $tainted_octets = encode_utf8($tainted_string);
+
+  Performance
+    "Unicode::UTF8" is ~ 500% to 2000% faster than "Encode".
+    <https://github.com/chansen/p5-unicode-utf8/blob/master/benchmarks/bench
+    .pl>
 
 SEE ALSO
     Encode
