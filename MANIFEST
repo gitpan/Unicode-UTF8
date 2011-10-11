@@ -30,6 +30,7 @@ t/090_non_shortest_form.t
 t/100_incomplete.t
 t/200_leaks.t
 t/210_tainted.t
+t/220_magic.t
 t/quickbrown.txt
 t/Util.pm
 UTF8.xs
