@@ -26,7 +26,7 @@ DESCRIPTION
 
     *   preserves taintedness of decoded $octets or encoded $string
 
-    *   increased performance ~ 500% to 2000%
+    *   much better performance ~ +600%
         <https://github.com/chansen/p5-unicode-utf8/blob/master/benchmarks/b
         ench.pl>
 
