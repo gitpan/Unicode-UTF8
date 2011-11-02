@@ -38,7 +38,7 @@ FUNCTIONS
     ill-formed UTF-8 sequences or encoded code points which can't be
     interchanged.
 
-    <$fallback> is a "CODE" reference which provides a error-handling
+    $fallback is a "CODE" reference which provides a error-handling
     mechanism, allowing customization of error handling. The default
     error-handling mechanism is to replace any ill-formed UTF-8 sequences or
     encoded code points which can't be interchanged with REPLACEMENT
@@ -46,8 +46,8 @@ FUNCTIONS
 
         $string = $fallback->($octets, $is_usv);
 
-    $fallback is invoked with two arguments, $octets and <$is_usv>. $octets
-    constains a sequence of one or more octets containing the maximal
+    $fallback is invoked with two arguments, $octets and $is_usv.
+    $octetsconstains a sequence of one or more octets containing the maximal
     subpart of the ill-formed subsequence or encoded code point which can't
     be interchanged. $is_usv is a boolean indicating whether or not $octets
     represent a encoded Unicode scalar value. $fallback must return a
@@ -61,7 +61,7 @@ FUNCTIONS
     points which can't be interchanged or represented in UTF-8 encoding
     form.
 
-    <$fallback> is a "CODE" reference which provides a error-handling
+    $fallback is a "CODE" reference which provides a error-handling
     mechanism, allowing customization of error handling. The default
     error-handling mechanism is to replace any code points which can't be
     interchanged or represented in UTF-8 encoding form with REPLACEMENT
@@ -69,9 +69,9 @@ FUNCTIONS
 
         $string = $fallback->($codepoint, $is_usv);
 
-    $fallback is invoked with two arguments, $codepoint and <$is_usv>.
+    $fallback is invoked with two arguments, $codepoint and $is_usv.
     $codepoint is a unsigned integer containing the code point which can't
-    represented in UTF-8 encoding form or be interchanged. $is_usv is a
+    be interchanged or represented in UTF-8 encoding form. $is_usv is a
     boolean indicating whether or not $codepoint is a Unicode scalar value.
     $fallback must return a character string consisting of zero or more
     characters.
