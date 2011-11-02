@@ -186,11 +186,50 @@ report_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos, con
 }
 
 static void
-decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
+utf8_encode_native(pTHX_ SV *, const U8 *, STRLEN);
+
+static void
+handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv) {
+    dSP;
+    SV *str;
+    const char *src;
+    STRLEN len;
+    int count;
+
+    ENTER;
+    SAVETMPS;
+
+    PUSHMARK(SP);
+    EXTEND(SP, 2);
+    mPUSHs(val);
+    mPUSHu(usv);
+    PUTBACK;
+
+    count = call_sv((SV *)fallback, G_SCALAR);
+
+    SPAGAIN;
+
+    if (count != 1)
+        croak("expected 1 return value from fallback sub, got %d\n", count);
+
+    str = POPs;
+    src = SvPV_const(str, len);
+    if (!SvUTF8(str))
+        utf8_encode_native(aTHX_ dsv, (const U8 *)src, len);
+    else
+        sv_catpvn_nomg(dsv, src, len); /* XXX validate? */
+
+    PUTBACK;
+    FREETMPS;
+    LEAVE;
+}
+
+static void
+utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
     const bool do_warn = ckWARN(WARN_UTF8);
     STRLEN pos = 0;
     STRLEN skip;
-    UV v;
+    UV usv;
 
     SvUPGRADE(dsv, SVt_PV);
     SvCUR_set(dsv, 0);
@@ -201,15 +240,23 @@ decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
         pos += off;
 
         skip = utf8_skip(src, len);
+
+        if ((do_warn || fallback) && !utf8_unpack(src, skip, &usv))
+            usv = 0;
+
         if (do_warn) {
-            if (utf8_unpack(src, skip, &v))
-                report_unmappable(aTHX_ v, pos);
+            if (usv)
+                report_unmappable(aTHX_ usv, pos);
             else
                 report_illformed(aTHX_ src, skip, "UTF-8", pos, FALSE);
         }
 
         sv_catpvn_nomg(dsv, (const char *)src - off, off);
-        sv_catpvn_nomg(dsv,"\xEF\xBF\xBD", 3);
+
+        if (fallback)
+            handle_fallback(aTHX_ dsv, fallback, newSVpvn(src, skip), usv);
+        else
+            sv_catpvn_nomg(dsv, "\xEF\xBF\xBD", 3);
 
         src += skip;
         len -= skip;
@@ -224,7 +271,31 @@ decode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
 }
 
 static void
-encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
+utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
+    const U8 *send;
+    U8 *d;
+
+    SvUPGRADE(dsv, SVt_PV);
+    SvGROW(dsv, SvCUR(dsv) + len * 2 + 1);
+    d    = (U8 *)SvPVX(dsv) + SvCUR(dsv);
+    send = src + len;
+
+    for (; src < send; src++) {
+        const U8 c = *src;
+        if (c < 0x80)
+            *d++ = c;
+        else {
+            *d++ = (U8)(0xC0 | ((c >>  6) & 0x1F));
+            *d++ = (U8)(0x80 | ( c        & 0x3F));
+        }
+    }
+    *d = 0;
+    SvCUR_set(dsv, d - (U8 *)SvPVX(dsv));
+    SvPOK_only(dsv);
+}
+
+static void
+utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
     const bool do_warn = ckWARN(WARN_UTF8);
     STRLEN pos = 0;
     STRLEN skip;
@@ -254,7 +325,13 @@ encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
             report_unmappable(aTHX_ v, pos);
 
         sv_catpvn_nomg(dsv, (const char *)src - off, off);
-        sv_catpvn_nomg(dsv,"\xEF\xBF\xBD", 3);
+
+        if (fallback) {
+            UV usv = (v <= 0x10FFFF && (v & 0xF800) != 0xD800) ? v : 0;
+            handle_fallback(aTHX_ dsv, fallback, newSVuv(v), usv);
+        }
+        else
+            sv_catpvn_nomg(dsv, "\xEF\xBF\xBD", 3);
 
         src += skip;
         len -= skip;
@@ -270,9 +347,12 @@ encode_utf8(pTHX_ const U8 *src, STRLEN len, STRLEN off, SV *dsv) {
 
 MODULE = Unicode::UTF8    PACKAGE = Unicode::UTF8
 
+PROTOTYPES: DISABLE
+
 void
-decode_utf8(octets)
+decode_utf8(octets, fallback=NULL)
     SV *octets
+    CV *fallback
   PREINIT:
     dXSTARG;
     const U8 *src;
@@ -289,14 +369,15 @@ decode_utf8(octets)
     if (off == len)
         sv_setpvn(TARG, (const char *)src, len);
     else
-        decode_utf8(aTHX_ src, len, off, TARG);
+        utf8_decode_replace(aTHX_ TARG, src, len, off, fallback);
 
     SvUTF8_on(TARG);
     PUSHTARG;
 
 void
-encode_utf8(string)
+encode_utf8(string, fallback=NULL)
     SV *string
+    CV *fallback
   PREINIT:
     dXSTARG;
     const U8 *src;
@@ -304,26 +385,7 @@ encode_utf8(string)
   PPCODE:
     src = (const U8 *)SvPV_const(string, len);
     if (!SvUTF8(string)) {
-        const U8 *send;
-        U8 *d;
-
-        SvUPGRADE(TARG, SVt_PV);
-        SvGROW(TARG, len * 2 + 1);
-        d    = (U8 *)SvPVX(TARG);
-        send = src + len;
-
-        for (; src < send; src++) {
-            const U8 c = *src;
-            if (c < 0x80)
-                *d++ = c;
-            else {
-                *d++ = (U8)(0xC0 | ((c >>  6) & 0x1F));
-                *d++ = (U8)(0x80 | ( c        & 0x3F));
-            }
-        }
-        *d = 0;
-        SvCUR_set(TARG, d - (U8 *)SvPVX(TARG));
-        SvPOK_only(TARG);
+        utf8_encode_native(aTHX_ TARG, src, len);
         SvTAINT(TARG);
     }
     else {
@@ -331,7 +393,7 @@ encode_utf8(string)
         if (off == len)
             sv_setpvn(TARG, (const char *)src, len);
         else
-            encode_utf8(aTHX_ src, len, off, TARG);
+            utf8_encode_replace(aTHX_ TARG, src, len, off, fallback);
     }
     SvUTF8_off(TARG);
     PUSHTARG;

@@ -9,7 +9,7 @@ SYNOPSIS
 
 DESCRIPTION
     This module provides functions to encode and decode UTF-8 encoding form
-    as defined by Unicode and ISO/IEC 10646:2011.
+    as specified by Unicode and ISO/IEC 10646:2011.
 
     Here is a summary of features for comparison with Encode:
 
@@ -26,24 +26,55 @@ DESCRIPTION
 
     *   preserves taintedness of decoded $octets or encoded $string
 
-    *   much better performance ~ +600%
-        <https://github.com/chansen/p5-unicode-utf8/blob/master/benchmarks/b
-        ench.pl>
+    *   better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN:
+        1200%, see benchmarks directory in git repository)
 
 FUNCTIONS
-  decode_utf8($octets)
+  decode_utf8($octets [, $fallback])
     Returns an decoded representation of $octets in UTF-8 encoding as a
     character string.
 
-    Issues a warning if $octets contains ill-formed UTF-8 sequences or
-    encoded code points which can't be interchanged.
+    Issues a warning using warnings category "utf8" if $octets contains
+    ill-formed UTF-8 sequences or encoded code points which can't be
+    interchanged.
 
-  encode_utf8($string)
+    <$fallback> is a "CODE" reference which provides a error-handling
+    mechanism, allowing customization of error handling. The default
+    error-handling mechanism is to replace any ill-formed UTF-8 sequences or
+    encoded code points which can't be interchanged with REPLACEMENT
+    CHARACTER (U+FFFD).
+
+        $string = $fallback->($octets, $is_usv);
+
+    $fallback is invoked with two arguments, $octets and <$is_usv>. $octets
+    constains a sequence of one or more octets containing the maximal
+    subpart of the ill-formed subsequence or encoded code point which can't
+    be interchanged. $is_usv is a boolean indicating whether or not $octets
+    represent a encoded Unicode scalar value. $fallback must return a
+    character string consisting of zero or more characters.
+
+  encode_utf8($string [, $fallback])
     Returns an encoded representation of $string in UTF-8 encoding as an
     octet string.
 
-    Issues a warning if $string contains code points which can't be
-    interchanged or represented in UTF-8 encoding form.
+    Issues a warning using warnings category "utf8" if $string contains code
+    points which can't be interchanged or represented in UTF-8 encoding
+    form.
+
+    <$fallback> is a "CODE" reference which provides a error-handling
+    mechanism, allowing customization of error handling. The default
+    error-handling mechanism is to replace any code points which can't be
+    interchanged or represented in UTF-8 encoding form with REPLACEMENT
+    CHARACTER (U+FFFD).
+
+        $string = $fallback->($codepoint, $is_usv);
+
+    $fallback is invoked with two arguments, $codepoint and <$is_usv>.
+    $codepoint is a unsigned integer containing the code point which can't
+    represented in UTF-8 encoding form or be interchanged. $is_usv is a
+    boolean indicating whether or not $codepoint is a Unicode scalar value.
+    $fallback must return a character string consisting of zero or more
+    characters.
 
 EXPORTS
     None by default. All functions can be exported using the ":all" tag or
@@ -81,6 +112,7 @@ DIAGNOSTICS
 
 SEE ALSO
     Encode
+    <http://www.unicode.org/>
 
 SUPPORT
   Bugs / Feature Requests
