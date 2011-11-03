@@ -26,4 +26,4 @@ requires:
   Exporter: 0
   XSLoader: 0
   perl: 5.008001
-version: 0.01_10
+version: 0.01_11

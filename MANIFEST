@@ -36,7 +36,4 @@ t/220_magic.t
 t/999_pod.t
 t/quickbrown.txt
 t/Util.pm
-UTF8.bs
-UTF8.c
-UTF8.o
 UTF8.xs

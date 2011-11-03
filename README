@@ -46,12 +46,12 @@ FUNCTIONS
 
         $string = $fallback->($octets, $is_usv);
 
-    $fallback is invoked with two arguments, $octets and $is_usv.
-    $octetsconstains a sequence of one or more octets containing the maximal
+    $fallback is invoked with two arguments, $octets and $is_usv. $octets
+    constains a sequence of one or more octets containing the maximal
     subpart of the ill-formed subsequence or encoded code point which can't
     be interchanged. $is_usv is a boolean indicating whether or not $octets
     represent a encoded Unicode scalar value. $fallback must return a
-    character string consisting of zero or more characters.
+    character string consisting of zero or more Unicode characters.
 
   encode_utf8($string [, $fallback])
     Returns an encoded representation of $string in UTF-8 encoding as an
@@ -74,7 +74,7 @@ FUNCTIONS
     be interchanged or represented in UTF-8 encoding form. $is_usv is a
     boolean indicating whether or not $codepoint is a Unicode scalar value.
     $fallback must return a character string consisting of zero or more
-    characters.
+    Unicode characters.
 
 EXPORTS
     None by default. All functions can be exported using the ":all" tag or
