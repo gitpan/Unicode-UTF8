@@ -115,14 +115,14 @@ SEE ALSO
     <http://www.unicode.org/>
 
 SUPPORT
-  Bugs / Feature Requests
-    Please report any bugs or feature requests by email to "bug-unicode-utf8
-    at rt.cpan.org", or through the web interface at
+  BUGS
+    Please report any bugs by email to "bug-unicode-utf8 at rt.cpan.org", or
+    through the web interface at
     <http://rt.cpan.org/Public/Dist/Display.html?Name=Unicode-UTF8>. You
     will be automatically notified of any progress on the request by the
     system.
 
-  Source Code
+  SOURCE CODE
     This is open source software. The code repository is available for
     public review and contribution under the terms of the license.
 
