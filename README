@@ -11,9 +11,10 @@ DESCRIPTION
     This module provides functions to encode and decode UTF-8 encoding form
     as specified by Unicode and ISO/IEC 10646:2011.
 
-    Here is a summary of features for comparison with Encode:
+    Here is a summary of features for comparison with Encode's UTF-8
+    implementation:
 
-    *   simple API which integrates with warnings category "utf8"
+    *   simple API which makes use of Perl's standard warning categories.
 
     *   recognizes all noncharacters regardless of perl version
 
@@ -46,10 +47,10 @@ FUNCTIONS
 
         $string = $fallback->($octets, $is_usv);
 
-    $fallback is invoked with two arguments, $octets and $is_usv. $octets
-    constains a sequence of one or more octets containing the maximal
-    subpart of the ill-formed subsequence or encoded code point which can't
-    be interchanged. $is_usv is a boolean indicating whether or not $octets
+    $fallback is invoked with two arguments, $octets and $is_usv. $octets is
+    a sequence of one or more octets containing the maximal subpart of the
+    ill-formed subsequence or encoded code point which can't be
+    interchanged. $is_usv is a boolean indicating whether or not $octets
     represent a encoded Unicode scalar value. $fallback must return a
     character string consisting of zero or more Unicode characters.
 
@@ -90,25 +91,29 @@ DIAGNOSTICS
         ill-formed subsequence.
 
     Can't interchange noncharacter code point U+%.4X at position %u
-        (W utf8) Noncharacters is permanently reserved for internal use and
-        that should never be interchanged. Noncharacters consist of the
-        values U+nFFFE and U+nFFFF (where n is from 0 to 10^16) and the
+        (W utf8, nonchar) Noncharacters is permanently reserved for internal
+        use and that should never be interchanged. Noncharacters consist of
+        the values U+nFFFE and U+nFFFF (where n is from 0 to 10^16) and the
         values U+FDD0..U+FDEF.
 
     Can't represent surrogate code point U+%.4X at position %u in UTF-8
     encoding form
-        (W utf8) Surrogate code points are designated only for surrogate
-        code units in the UTF-16 character encoding form. Surrogates consist
-        of code points in the range U+D800 to U+DFFF.
+        (W utf8, surrogate) Surrogate code points are designated only for
+        surrogate code units in the UTF-16 character encoding form.
+        Surrogates consist of code points in the range U+D800 to U+DFFF.
 
     Can't represent super code point \x{%X} at position %u in UTF-8 encoding
     form
-        (W utf8) Code points greater than U+10FFFF. Perl's extended
-        codespace.
+        (W utf8, non_unicode) Code points greater than U+10FFFF. Perl's
+        extended codespace.
 
     Can't decode ill-formed UTF-X octet sequence <%s> in position %u
         (F) Encountered an ill-formed octet sequence in Perl's internal
         representation of wide characters.
+
+    Please note that the sub-categories of utf8 warning "nonchar",
+    "surrogate" and "non_unicode" is only available on Perl 5.14 or greater.
+    See perllexwarn for available categories and hierarchies.
 
 SEE ALSO
     Encode
