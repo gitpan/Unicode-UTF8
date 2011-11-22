@@ -1,5 +1,5 @@
 NAME
-    Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form.
+    Unicode::UTF8 - Decoding and encoding of UTF-8 encoding form
 
 SYNOPSIS
         use Unicode::UTF8 qw[decode_utf8 encode_utf8];
@@ -10,25 +10,6 @@ SYNOPSIS
 DESCRIPTION
     This module provides functions to encode and decode UTF-8 encoding form
     as specified by Unicode and ISO/IEC 10646:2011.
-
-    Here is a summary of features for comparison with Encode's UTF-8
-    implementation:
-
-    *   simple API which makes use of Perl's standard warning categories.
-
-    *   recognizes all noncharacters regardless of perl version
-
-    *   implements Unicode's recommended practice for using U+FFFD
-
-    *   helpful diagnostics in warnings messages
-
-    *   detects and reports inconsistency in perl's internal encoding
-        (UTF-X)
-
-    *   preserves taintedness of decoded $octets or encoded $string
-
-    *   better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN:
-        1200%, see benchmarks directory in git repository)
 
 FUNCTIONS
   decode_utf8($octets [, $fallback])
@@ -114,6 +95,31 @@ DIAGNOSTICS
     Please note that the sub-categories of utf8 warning "nonchar",
     "surrogate" and "non_unicode" is only available on Perl 5.14 or greater.
     See perllexwarn for available categories and hierarchies.
+
+COMPARISON
+    Here is a summary of features for comparison with Encode's UTF-8
+    implementation:
+
+    *   simple API which makes use of Perl's standard warning categories.
+
+    *   recognizes all noncharacters regardless of perl version
+
+    *   implements Unicode's recommended practice for using U+FFFD
+
+    *   good diagnostics in warnings messages
+
+    *   detects and reports inconsistency in perl's internal encoding
+        (UTF-X)
+
+    *   preserves taintedness of decoded $octets or encoded $string
+
+    *   better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN:
+        1200%, see benchmarks directory in git repository)
+
+CONFORMANCE
+    It's the author's believe that this UTF-8 implementation is conformant
+    with the Unicode Standard Version 6.0. Any deviations from the Unicode
+    Standard is to be considered a bug.
 
 SEE ALSO
     Encode

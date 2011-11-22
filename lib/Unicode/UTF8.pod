@@ -1,6 +1,6 @@
 =head1 NAME
 
-Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form.
+Unicode::UTF8 - Decoding and encoding of UTF-8 encoding form
 
 =head1 SYNOPSIS
 
@@ -13,41 +13,6 @@ Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form.
 
 This module provides functions to encode and decode UTF-8 encoding form as 
 specified by Unicode and ISO/IEC 10646:2011.
-
-Here is a summary of features for comparison with L<Encode>'s UTF-8 implementation:
-
-=over 4
-
-=item *
-
-simple API which makes use of Perl's standard warning categories.
-
-=item *
-
-recognizes all noncharacters regardless of perl version
-
-=item *
-
-implements Unicode's recommended practice for using U+FFFD
-
-=item *
-
-helpful diagnostics in warnings messages
-
-=item *
-
-detects and reports inconsistency in perl's internal encoding (UTF-X)
-
-=item *
-
-preserves taintedness of decoded C<$octets> or encoded C<$string>
-
-=item *
-
-better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN: 1200%, 
-see benchmarks directory in git repository)
-
-=back
 
 =head1 FUNCTIONS
 
@@ -78,7 +43,7 @@ string consisting of zero or more Unicode characters.
 Returns an encoded representation of C<$string> in UTF-8 encoding as an octet
 string.
 
-Issues a warning using L<warnings> category C<utf8> if C<$string> contains 
+Issues a warning using warnings category C<utf8> if C<$string> contains 
 code points which can't be interchanged or represented in UTF-8 encoding form.
 
 C<$fallback> is a C<CODE> reference which provides a error-handling mechanism, 
@@ -137,6 +102,49 @@ of wide characters.
 Please note that the sub-categories of utf8 warning C<nonchar>, C<surrogate> 
 and C<non_unicode> is only available on Perl 5.14 or greater. See L<perllexwarn> 
 for available categories and hierarchies.
+
+=head1 COMPARISON
+
+Here is a summary of features for comparison with L<Encode>'s UTF-8 implementation:
+
+=over 4
+
+=item *
+
+simple API which makes use of Perl's standard warning categories.
+
+=item *
+
+recognizes all noncharacters regardless of perl version
+
+=item *
+
+implements Unicode's recommended practice for using U+FFFD
+
+=item *
+
+good diagnostics in warnings messages
+
+=item *
+
+detects and reports inconsistency in perl's internal encoding (UTF-X)
+
+=item *
+
+preserves taintedness of decoded C<$octets> or encoded C<$string>
+
+=item *
+
+better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN: 1200%, 
+see benchmarks directory in git repository)
+
+=back
+
+=head1 CONFORMANCE
+
+It's the author's believe that this UTF-8 implementation is conformant with 
+the Unicode Standard Version 6.0. Any deviations from the Unicode Standard 
+is to be considered a bug.
 
 =head1 SEE ALSO
 
