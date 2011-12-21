@@ -1,5 +1,5 @@
 NAME
-    Unicode::UTF8 - Decoding and encoding of UTF-8 encoding form
+    Unicode::UTF8 - Encoding and decoding of UTF-8 encoding form
 
 SYNOPSIS
         use Unicode::UTF8 qw[decode_utf8 encode_utf8];
@@ -12,7 +12,10 @@ DESCRIPTION
     as specified by Unicode and ISO/IEC 10646:2011.
 
 FUNCTIONS
-  decode_utf8($octets [, $fallback])
+  decode_utf8
+        $string = decode_utf8($octets);
+        $string = decode_utf8($octets, $fallback);
+
     Returns an decoded representation of $octets in UTF-8 encoding as a
     character string.
 
@@ -20,11 +23,11 @@ FUNCTIONS
     ill-formed UTF-8 sequences or encoded code points which can't be
     interchanged.
 
-    $fallback is a "CODE" reference which provides a error-handling
-    mechanism, allowing customization of error handling. The default
-    error-handling mechanism is to replace any ill-formed UTF-8 sequences or
-    encoded code points which can't be interchanged with REPLACEMENT
-    CHARACTER (U+FFFD).
+    $fallback is an optional "CODE" reference which provides a
+    error-handling mechanism, allowing customization of error handling. The
+    default error-handling mechanism is to replace any ill-formed UTF-8
+    sequences or encoded code points which can't be interchanged with
+    REPLACEMENT CHARACTER (U+FFFD).
 
         $string = $fallback->($octets, $is_usv);
 
@@ -33,9 +36,14 @@ FUNCTIONS
     ill-formed subsequence or encoded code point which can't be
     interchanged. $is_usv is a boolean indicating whether or not $octets
     represent a encoded Unicode scalar value. $fallback must return a
-    character string consisting of zero or more Unicode characters.
+    character string consisting of zero or more Unicode scalar values.
+    Unicode scalar values consist of code points in the range U+0000..U+D7FF
+    and U+E000..U+10FFFF.
 
-  encode_utf8($string [, $fallback])
+  encode_utf8
+        $octets = encode_utf8($string);
+        $octets = encode_utf8($string, $fallback);
+
     Returns an encoded representation of $string in UTF-8 encoding as an
     octet string.
 
@@ -43,11 +51,11 @@ FUNCTIONS
     points which can't be interchanged or represented in UTF-8 encoding
     form.
 
-    $fallback is a "CODE" reference which provides a error-handling
-    mechanism, allowing customization of error handling. The default
-    error-handling mechanism is to replace any code points which can't be
-    interchanged or represented in UTF-8 encoding form with REPLACEMENT
-    CHARACTER (U+FFFD).
+    $fallback is an optional "CODE" reference which provides a
+    error-handling mechanism, allowing customization of error handling. The
+    default error-handling mechanism is to replace any code points which
+    can't be interchanged or represented in UTF-8 encoding form with
+    REPLACEMENT CHARACTER (U+FFFD).
 
         $string = $fallback->($codepoint, $is_usv);
 
@@ -56,7 +64,8 @@ FUNCTIONS
     be interchanged or represented in UTF-8 encoding form. $is_usv is a
     boolean indicating whether or not $codepoint is a Unicode scalar value.
     $fallback must return a character string consisting of zero or more
-    Unicode characters.
+    Unicode scalar values. Unicode scalar values consist of code points in
+    the range U+0000..U+D7FF and U+E000..U+10FFFF.
 
 EXPORTS
     None by default. All functions can be exported using the ":all" tag or
