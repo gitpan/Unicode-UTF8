@@ -4,6 +4,7 @@ NAME
 SYNOPSIS
         use Unicode::UTF8 qw[decode_utf8 encode_utf8];
     
+        use warnings FATAL => 'utf8'; # Promote decoding/encoding warnings into exceptions
         $string = decode_utf8($octets);
         $octets = encode_utf8($string);
 
@@ -13,11 +14,11 @@ DESCRIPTION
 
 FUNCTIONS
   decode_utf8
-        $string = decode_utf8($octets);
-        $string = decode_utf8($octets, $fallback);
-
     Returns an decoded representation of $octets in UTF-8 encoding as a
     character string.
+
+        $string = decode_utf8($octets);
+        $string = decode_utf8($octets, $fallback);
 
     Issues a warning using warnings category "utf8" if $octets contains
     ill-formed UTF-8 sequences or encoded code points which can't be
@@ -29,23 +30,25 @@ FUNCTIONS
     sequences or encoded code points which can't be interchanged with
     REPLACEMENT CHARACTER (U+FFFD).
 
-        $string = $fallback->($octets, $is_usv);
+        $string = $fallback->($octets, $is_usv, $position);
 
-    $fallback is invoked with two arguments, $octets and $is_usv. $octets is
-    a sequence of one or more octets containing the maximal subpart of the
-    ill-formed subsequence or encoded code point which can't be
-    interchanged. $is_usv is a boolean indicating whether or not $octets
-    represent a encoded Unicode scalar value. $fallback must return a
-    character string consisting of zero or more Unicode scalar values.
-    Unicode scalar values consist of code points in the range U+0000..U+D7FF
-    and U+E000..U+10FFFF.
+    $fallback is invoked with three arguments: $octets, $is_usv and
+    $position. $octets is a sequence of one or more octets containing the
+    maximal subpart of the ill-formed subsequence or encoded code point
+    which can't be interchanged. $is_usv is a boolean indicating whether or
+    not $octets represent a encoded Unicode scalar value. $position is a
+    unsigned integer containing the zero based octet position at which the
+    error occurred within the octets provided to "decode_utf8()". $fallback
+    must return a character string consisting of zero or more Unicode scalar
+    values. Unicode scalar values consist of code points in the range
+    U+0000..U+D7FF and U+E000..U+10FFFF.
 
   encode_utf8
-        $octets = encode_utf8($string);
-        $octets = encode_utf8($string, $fallback);
-
     Returns an encoded representation of $string in UTF-8 encoding as an
     octet string.
+
+        $octets = encode_utf8($string);
+        $octets = encode_utf8($string, $fallback);
 
     Issues a warning using warnings category "utf8" if $string contains code
     points which can't be interchanged or represented in UTF-8 encoding
@@ -57,15 +60,17 @@ FUNCTIONS
     can't be interchanged or represented in UTF-8 encoding form with
     REPLACEMENT CHARACTER (U+FFFD).
 
-        $string = $fallback->($codepoint, $is_usv);
+        $string = $fallback->($codepoint, $is_usv, $position);
 
-    $fallback is invoked with two arguments, $codepoint and $is_usv.
-    $codepoint is a unsigned integer containing the code point which can't
-    be interchanged or represented in UTF-8 encoding form. $is_usv is a
-    boolean indicating whether or not $codepoint is a Unicode scalar value.
-    $fallback must return a character string consisting of zero or more
-    Unicode scalar values. Unicode scalar values consist of code points in
-    the range U+0000..U+D7FF and U+E000..U+10FFFF.
+    $fallback is invoked with three arguments: $codepoint, $is_usv and
+    $position. $codepoint is a unsigned integer containing the code point
+    which can't be interchanged or represented in UTF-8 encoding form.
+    $is_usv is a boolean indicating whether or not $codepoint is a Unicode
+    scalar value. $position is a unsigned integer containing the zero based
+    character position at which the error occurred within the string
+    provided to "encode_utf8()". $fallback must return a character string
+    consisting of zero or more Unicode scalar values.Unicode scalar values
+    consist of code points in the range U+0000..U+D7FF and U+E000..U+10FFFF.
 
 EXPORTS
     None by default. All functions can be exported using the ":all" tag or
@@ -109,20 +114,20 @@ COMPARISON
     Here is a summary of features for comparison with Encode's UTF-8
     implementation:
 
-    *   simple API which makes use of Perl's standard warning categories.
+    *   Simple API which makes use of Perl's standard warning categories.
 
-    *   recognizes all noncharacters regardless of perl version
+    *   Recognizes all noncharacters regardless of perl version
 
-    *   implements Unicode's recommended practice for using U+FFFD
+    *   Implements Unicode's recommended practice for using U+FFFD.
 
-    *   good diagnostics in warnings messages
+    *   Good diagnostics in warning/exception messages
 
-    *   detects and reports inconsistency in perl's internal encoding
-        (UTF-X)
+    *   Detects and reports inconsistency in Perl's internal representation
+        of wide characters (UTF-X)
 
-    *   preserves taintedness of decoded $octets or encoded $string
+    *   Preserves taintedness of decoded $octets or encoded $string
 
-    *   better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN:
+    *   Better performance ~ 600% - 1200% (JA: 600%, AR: 700%, SV: 900%, EN:
         1200%, see benchmarks directory in git repository)
 
 CONFORMANCE
