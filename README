@@ -85,13 +85,13 @@ DIAGNOSTICS
         contains a hexadecimal representation of the maximal subpart of the
         ill-formed subsequence.
 
-    Can't interchange noncharacter code point U+%.4X at position %u
+    Can't interchange noncharacter code point U+%X at position %u
         (W utf8, nonchar) Noncharacters is permanently reserved for internal
         use and that should never be interchanged. Noncharacters consist of
         the values U+nFFFE and U+nFFFF (where n is from 0 to 10^16) and the
         values U+FDD0..U+FDEF.
 
-    Can't represent surrogate code point U+%.4X at position %u in UTF-8
+    Can't represent surrogate code point U+%X at position %u in UTF-8
     encoding form
         (W utf8, surrogate) Surrogate code points are designated only for
         surrogate code units in the UTF-16 character encoding form.
@@ -106,9 +106,9 @@ DIAGNOSTICS
         (F) Encountered an ill-formed octet sequence in Perl's internal
         representation of wide characters.
 
-    Please note that the sub-categories of utf8 warning "nonchar",
-    "surrogate" and "non_unicode" is only available on Perl 5.14 or greater.
-    See perllexwarn for available categories and hierarchies.
+    Sub-categories of utf8 warning "nonchar", "surrogate" and "non_unicode"
+    is only available on Perl 5.14 or greater. See perllexwarn for available
+    categories and hierarchies.
 
 COMPARISON
     Here is a summary of features for comparison with Encode's UTF-8
@@ -159,7 +159,7 @@ AUTHOR
     Christian Hansen "chansen@cpan.org"
 
 COPYRIGHT
-    Copyright 2011 by Christian Hansen.
+    Copyright 2011-2012 by Christian Hansen.
 
     This is free software; you can redistribute it and/or modify it under
     the same terms as the Perl 5 programming language system itself.
