@@ -161,19 +161,19 @@ xs_report_unmappable(pTHX_ const UV cp, const STRLEN pos) {
     U32 cat;
 
     if (cp > 0x10FFFF) {
-        fmt = "Can't represent super code point \\x{%"UVXf"} at position %"UVuf" in UTF-8 encoding form";
+        fmt = "Can't represent super code point \\x{%"UVXf"} in position %"UVuf;
         cat = WARN_NON_UNICODE;
     }
     else if (cp >= 0xFDD0 && (cp <= 0xFDEF || (cp & 0xFFFE) == 0xFFFE)) {
-        fmt = "Can't interchange noncharacter code point U+%"UVXf" at position %"UVuf;
+        fmt = "Can't interchange noncharacter code point U+%"UVXf" in position %"UVuf;
         cat = WARN_NONCHAR;
     }
     else if ((cp & 0xF800) == 0xD800) {
-        fmt = "Can't represent surrogate code point U+%"UVXf" at position %"UVuf" in UTF-8 encoding form";
+        fmt = "Can't represent surrogate code point U+%"UVXf" in position %"UVuf;
         cat = WARN_SURROGATE;
     }
     else {
-        fmt = "Can't represent code point U+%04"UVXf" at position %"UVuf" in UTF-8 encoding form";
+        fmt = "Can't represent code point U+%04"UVXf" in position %"UVuf;
         cat = WARN_UTF8;
     }
 
@@ -212,7 +212,7 @@ xs_report_illformed(pTHX_ const U8 *s, STRLEN len, const char *enc, STRLEN pos, 
 }
 
 static void
-xs_utf8_encode_native(pTHX_ SV *, const U8 *, STRLEN);
+xs_utf8_encode_native(pTHX_ SV *, const U8 *, STRLEN, const bool);
 
 static void
 xs_handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv, STRLEN pos) {
@@ -241,10 +241,10 @@ xs_handle_fallback(pTHX_ SV *dsv, CV *fallback, SV *val, UV usv, STRLEN pos) {
 
     str = POPs;
     src = SvPV_const(str, len);
-    if (!SvUTF8(str))
-        xs_utf8_encode_native(aTHX_ dsv, (const U8 *)src, len);
-    else
+    if (SvUTF8(str))
         sv_catpvn_nomg(dsv, src, len); /* XXX validate? */
+    else
+        xs_utf8_encode_native(aTHX_ dsv, (const U8 *)src, len, TRUE);
 
     PUTBACK;
     FREETMPS;
@@ -263,7 +263,8 @@ xs_utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
     UV usv;
 
     (void)SvUPGRADE(dsv, SVt_PV);
-    (void)SvGROW(dsv, SvCUR(dsv) + off + 1);
+    (void)SvGROW(dsv, off + 1);
+    SvCUR_set(dsv, 0);
     SvPOK_only(dsv);
 
     do {
@@ -305,30 +306,6 @@ xs_utf8_decode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
 }
 
 static void
-xs_utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len) {
-    const U8 *send;
-    U8 *d;
-
-    (void)SvUPGRADE(dsv, SVt_PV);
-    SvGROW(dsv, SvCUR(dsv) + len * 2 + 1);
-    d    = (U8 *)SvPVX(dsv) + SvCUR(dsv);
-    send = src + len;
-
-    for (; src < send; src++) {
-        const U8 c = *src;
-        if (c < 0x80)
-            *d++ = c;
-        else {
-            *d++ = (U8)(0xC0 | ((c >>  6) & 0x1F));
-            *d++ = (U8)(0x80 | ( c        & 0x3F));
-        }
-    }
-    *d = 0;
-    SvCUR_set(dsv, d - (U8 *)SvPVX(dsv));
-    SvPOK_only(dsv);
-}
-
-static void
 xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV *fallback) {
 #if PERL_REVISION == 5 && PERL_VERSION >= 14
     const bool do_warn = ckWARN4_d(WARN_UTF8, WARN_NONCHAR, WARN_SURROGATE, WARN_NON_UNICODE);
@@ -340,7 +317,8 @@ xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
     UV v;
 
     (void)SvUPGRADE(dsv, SVt_PV);
-    (void)SvGROW(dsv, SvCUR(dsv) + off + 1);
+    (void)SvGROW(dsv, off + 1);
+    SvCUR_set(dsv, 0);
     SvPOK_only(dsv);
 
     do {
@@ -385,6 +363,112 @@ xs_utf8_encode_replace(pTHX_ SV *dsv, const U8 *src, STRLEN len, STRLEN off, CV 
     } while (len);
 }
 
+static void
+xs_utf8_encode_native(pTHX_ SV *dsv, const U8 *src, STRLEN len, const bool append) {
+    const U8 *end = src + len;
+    U8 *d;
+    STRLEN off = 0;
+
+    if (append)
+        off = SvCUR(dsv);
+
+    (void)SvUPGRADE(dsv, SVt_PV);
+    (void)SvGROW(dsv, off + len * 2 + 1);
+    d = (U8 *)SvPVX(dsv) + off;
+
+    for (; src < end; src++) {
+        const U8 c = *src;
+        if (c < 0x80)
+            *d++ = c;
+        else {
+            *d++ = (U8)(0xC0 | ((c >> 6) & 0x1F));
+            *d++ = (U8)(0x80 | ((c     ) & 0x3F));
+        }
+    }
+    *d = 0;
+    SvCUR_set(dsv, d - (U8 *)SvPVX(dsv));
+    SvPOK_only(dsv);
+}
+
+static void
+xs_utf8_encode_native_inplace(pTHX_ SV *sv, const U8 *s, STRLEN len) {
+    const U8 *p = s;
+    const U8 *e = s + len;
+
+    while (p < e && *p < 0x80)
+        p++;
+
+    if (p != e) {
+        STRLEN size, off;
+        U8 *d;
+
+        off = p - s;
+        size = len;
+        while (p < e)
+            size += (*p++ > 0x7F);
+
+        if (SvLEN(sv) < size + 1) {
+            (void)sv_grow(sv, size + 1);
+            s = (const U8 *)SvPVX(sv);
+            e = s + len;
+        }
+        d = (U8 *)SvPVX(sv) + size;
+        *d = 0;
+        for (s += off, e--; e >= s; e--) {
+            const U8 c = *e;
+            if (c < 0x80)
+                *--d = c;
+            else {
+                *--d = (U8)(0x80 | ((c     ) & 0x3F));
+                *--d = (U8)(0xC0 | ((c >> 6) & 0x1F));
+            }
+        }
+        SvCUR_set(sv, size);
+    }
+    SvPOK_only(sv);
+}
+
+static void
+xs_utf8_downgrade(pTHX_ SV *dsv, const U8 *s, STRLEN len) {
+    const U8 *e = s + len - 1;
+    U8 *d, c, v;
+
+    (void)SvUPGRADE(dsv, SVt_PV);
+    (void)SvGROW(dsv, len + 1);
+    d = (U8 *)SvPVX(dsv);
+
+    while (s < e) {
+        c = *s++;
+        if (c < 0x80)
+            *d++ = c;
+        else {
+            if ((c & 0xFE) != 0xC2)
+                goto error;
+            v = (c & 0x1F) << 6;
+            c = *s++;
+            if ((c & 0xC0) != 0x80)
+                goto error;
+            *d++ = (U8)(v | (c & 0x3F));
+        }
+    }
+    if (s < e + 1) {
+        if (*s < 0x80)
+            *d++ = *s;
+        else {
+          error:
+            croak("Can't decode a wide character string");
+        }
+    }
+    *d = 0;
+    SvCUR_set(dsv, d - (U8 *)SvPVX(dsv));
+    SvPOK_only(dsv);
+}
+
+/* SVt_PV, SVt_PVIV, SVt_PVNV, SVt_PVMG */
+#define SvPV_stealable(sv) \
+  ((SvFLAGS(sv) & ~(SVTYPEMASK|SVf_UTF8)) == (SVs_TEMP|SVf_POK|SVp_POK) && \
+   (SvTYPE(sv) >= SVt_PV && SvTYPE(sv) <= SVt_PVMG) && SvREFCNT(sv) == 1)
+
 MODULE = Unicode::UTF8    PACKAGE = Unicode::UTF8
 
 PROTOTYPES: DISABLE
@@ -394,58 +478,89 @@ decode_utf8(octets, fallback=NULL)
     SV *octets
     CV *fallback
   PREINIT:
-    dXSTARG;
     const U8 *src;
     STRLEN len, off;
+    bool reuse_sv;
   PPCODE:
     src = (const U8 *)SvPV_const(octets, len);
+    reuse_sv = SvPV_stealable(octets);
     if (SvUTF8(octets)) {
-        octets = sv_newmortal();
-        sv_setpvn(octets, (const char *)src, len);
-        SvUTF8_on(octets);
-        if (!sv_utf8_downgrade(octets, TRUE))
-            croak("Can't decode a wide character string");
+        if (!reuse_sv) {
+            octets = sv_newmortal();
+            reuse_sv = TRUE;
+        }
+        xs_utf8_downgrade(aTHX_ octets, src, len);
+        if (SvCUR(octets) == len) {
+            ST(0) = octets;
+            SvUTF8_on(octets);
+            XSRETURN(1);
+        }
         src = (const U8 *)SvPV_const(octets, len);
     }
     off = xs_utf8_check(src, len);
-    if (off == len)
-        sv_setpvn(TARG, (const char *)src, len);
-    else {
-        SV *dsv = sv_newmortal();
-        xs_utf8_decode_replace(aTHX_ dsv, src, len, off, fallback);
-        SvUTF8_on(dsv);
-        ST(0) = dsv;
-        XSRETURN(1);
+    if (off == len) {
+        if (reuse_sv) {
+            ST(0) = octets;
+            SvUTF8_on(octets);
+            XSRETURN(1);
+        }
+        else {
+            dXSTARG;
+            sv_setpvn(TARG, (const char *)src, len);
+            SvUTF8_on(TARG);
+            PUSHTARG;
+        }
     }
-    SvUTF8_on(TARG);
-    PUSHTARG;
+    else {
+        dXSTARG;
+        xs_utf8_decode_replace(aTHX_ TARG, src, len, off, fallback);
+        SvUTF8_on(TARG);
+        PUSHTARG;
+    }
 
 void
 encode_utf8(string, fallback=NULL)
     SV *string
     CV *fallback
   PREINIT:
-    dXSTARG;
     const U8 *src;
     STRLEN len;
+    bool reuse_sv;
   PPCODE:
     src = (const U8 *)SvPV_const(string, len);
+    reuse_sv = SvPV_stealable(string);
     if (!SvUTF8(string)) {
-        xs_utf8_encode_native(aTHX_ TARG, src, len);
-        SvTAINT(TARG);
+        if (reuse_sv) {
+            xs_utf8_encode_native_inplace(aTHX_ string, src, len);
+            ST(0) = string;
+            XSRETURN(1);
+        }
+        else {
+            dXSTARG;
+            xs_utf8_encode_native(aTHX_ TARG, src, len, FALSE);
+            SvTAINT(TARG);
+            PUSHTARG;
+        }
     }
     else {
         STRLEN off = xs_utf8_check(src, len);
-        if (off == len)
-            sv_setpvn(TARG, (const char *)src, len);
+        if (off == len) {
+            if (reuse_sv) {
+                ST(0) = string;
+                SvUTF8_off(string);
+                XSRETURN(1);
+            }
+            else {
+                dXSTARG;
+                sv_setpvn(TARG, (const char *)src, len);
+                SvUTF8_off(TARG);
+                PUSHTARG;
+            }
+        }
         else {
-            SV *dsv = sv_newmortal();
-            xs_utf8_encode_replace(aTHX_ dsv, src, len, off, fallback);
-            ST(0) = dsv;
-            XSRETURN(1);
+            dXSTARG;
+            xs_utf8_encode_replace(aTHX_ TARG, src, len, off, fallback);
+            PUSHTARG;
         }
     }
-    SvUTF8_off(TARG);
-    PUSHTARG;
-
 
