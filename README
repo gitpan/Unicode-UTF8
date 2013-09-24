@@ -64,12 +64,21 @@ FUNCTIONS
     consisting of zero or more Unicode scalar values.Unicode scalar values
     consist of code points in the range U+0000..U+D7FF and U+E000..U+10FFFF.
 
+  valid_utf8
+        $boolean = valid_utf8($octets);
+
+    Returns a boolean indicating whether or not the given $octets consist of
+    well-formed UTF-8 sequences.
+
 EXPORTS
     None by default. All functions can be exported using the ":all" tag or
     individually.
 
 DIAGNOSTICS
     Can't decode a wide character string
+        (F) Wide character in octets.
+
+    Can't validate a wide character string
         (F) Wide character in octets.
 
     Can't decode ill-formed UTF-8 octet sequence <%s> in position %u
